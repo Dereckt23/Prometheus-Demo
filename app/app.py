@@ -1,6 +1,7 @@
+import time
+
 from flask import Flask, Response
 from prometheus_client import Counter, Gauge, generate_latest, CONTENT_TYPE_LATEST
-import random
 
 app = Flask(__name__)
 
@@ -12,19 +13,27 @@ http_requests_total = Counter(
     ["method", "endpoint", "status"],
 )
 
-# Métrica opcional: un valor que sube y baja con el tiempo (Gauge),
-# útil para mostrar que Prometheus guarda una serie temporal, no solo un contador.
-app_temperature_celsius = Gauge(
-    "app_temperature_celsius",
-    "Temperatura simulada de la aplicación (valor de ejemplo para la demo)",
+# Métrica opcional: un valor que sube y baja (Gauge), a diferencia del Counter
+# de arriba que solo crece. Representa cuántas solicitudes está procesando la
+# app EN ESTE MOMENTO. Es una métrica real que se usa en producción para ver
+# concurrencia y detectar cuellos de botella.
+app_requests_in_progress = Gauge(
+    "app_requests_in_progress",
+    "Cantidad de solicitudes que la app está procesando en este momento",
 )
 
 
 @app.route("/")
 def hello():
-    http_requests_total.labels(method="GET", endpoint="/", status="200").inc()
-    app_temperature_celsius.set(round(random.uniform(20.0, 30.0), 1))
-    return "Hello World"
+    app_requests_in_progress.inc()
+    try:
+        # Trabajo simulado, solo para que la solicitud tarde lo suficiente
+        # y se pueda observar el Gauge subiendo durante la demo.
+        time.sleep(2)
+        http_requests_total.labels(method="GET", endpoint="/", status="200").inc()
+        return "Hello World"
+    finally:
+        app_requests_in_progress.dec()
 
 
 @app.route("/metrics")
@@ -37,4 +46,6 @@ if __name__ == "__main__":
     # conexiones que se originan en el propio contenedor. Docker necesita que la
     # app escuche en todas las interfaces (0.0.0.0) para poder mapear el puerto
     # hacia el host y para que Prometheus la alcance desde otro contenedor.
-    app.run(host="0.0.0.0", port=8000)
+    # threaded=True: permite que la app atienda varias solicitudes en paralelo,
+    # necesario para que app_requests_in_progress pueda mostrar un valor mayor a 1.
+    app.run(host="0.0.0.0", port=8000, threaded=True)

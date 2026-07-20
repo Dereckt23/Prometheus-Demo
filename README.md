@@ -163,9 +163,32 @@ http_requests_total
 >
 > Esto es, en esencia, cómo funciona un sistema de monitoreo basado en Prometheus."
 
-(Métrica opcional `app_temperature_celsius`: si sobra tiempo, muéstrala como ejemplo de
-un valor que sube y baja, para reforzar la idea de que Prometheus guarda una *serie en
-el tiempo*, no solo contadores que crecen.)
+### 7. Bonus: una métrica que sube y baja (si sobra tiempo, 1-2 min)
+
+`http_requests_total` solo crece — es un **Counter**. Prometheus también soporta
+**Gauges**: valores que pueden subir y bajar. El demo incluye uno: `app_requests_in_progress`,
+que representa cuántas solicitudes está procesando la app *en este preciso momento*
+(una métrica real, muy usada en producción para ver concurrencia).
+
+Para mostrarlo en vivo, abre 3-4 pestañas del navegador y carga
+`http://localhost:8000/` casi al mismo tiempo en todas (la app tarda ~2 segundos en
+responder a propósito, para dar tiempo a observar el valor). Mientras se están
+procesando, ejecuta en Prometheus:
+
+```
+app_requests_in_progress
+```
+
+> "Miren, el valor subió a 3 o 4 mientras esas solicitudes se procesaban al mismo
+> tiempo. En unos segundos, cuando todas terminen, va a volver a 0. Esto es un Gauge:
+> a diferencia del contador de antes, este valor sube **y baja**, y refleja el estado
+> actual de la aplicación, no un total acumulado."
+
+> Nota para el presentador: el valor baja a 0 cuando el *servidor* termina de procesar
+> la solicitud (2 segundos después de recibirla), no cuando alguien cierra la pestaña.
+> Dejar las pestañas abiertas no mantiene nada "en progreso" — la solicitud ya terminó
+> en cuanto el servidor envió la respuesta. Si alguien del público pregunta por qué
+> vuelve a 0 aunque no cerraron nada, esa es la explicación.
 
 ## Troubleshooting
 
@@ -238,7 +261,7 @@ docker compose ps
 ## Lo que debería quedar claro al final de la charla
 
 1. Una aplicación puede producir métricas.
-2. Una métrica representa algo que ocurre en la aplicación (una solicitud, una temperatura, etc.).
+2. Una métrica representa algo que ocurre en la aplicación (una solicitud recibida, cuántas se están procesando ahora mismo, etc.).
 3. Prometheus puede recolectar esas métricas.
 4. Prometheus usa normalmente un modelo *Pull*: pregunta activamente por los datos.
 5. Prometheus almacena los valores a lo largo del tiempo (series temporales).
