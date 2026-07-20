@@ -1,0 +1,22 @@
+services:
+  app:
+    build: ./app
+    ports:
+      - "8000:8000"
+    networks:
+      - observability
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - observability
+    depends_on:
+      - app
+
+networks:
+  observability:
+    driver: bridge
