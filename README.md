@@ -42,8 +42,7 @@ docker compose up --build
 Espera a ver en la terminal que Flask y Prometheus arrancaron. Deja la ventana abierta
 (los logs se muestran en vivo).
 
-Para ejecutar en segundo plano (recomendado si vas a seguir usando la misma terminal
-para otros comandos durante la charla):
+Para ejecutar en segundo plano:
 
 ```powershell
 docker compose up --build -d
