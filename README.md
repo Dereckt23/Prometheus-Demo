@@ -169,16 +169,27 @@ http_requests_total
 que representa cuántas solicitudes está procesando la app *en este preciso momento*
 (una métrica real, muy usada en producción para ver concurrencia).
 
-Para mostrarlo en vivo, abre 3-4 pestañas del navegador y carga
-`http://localhost:8000/` casi al mismo tiempo en todas (la app tarda ~2 segundos en
-responder a propósito, para dar tiempo a observar el valor). Mientras se están
-procesando, ejecuta en Prometheus:
+Para mostrarlo en vivo, genera varias solicitudes al mismo tiempo (la app tarda
+~2 segundos en responder a propósito, para dar tiempo a observar el valor). Hay dos formas:
+
+- **Abrir 3-4 pestañas del navegador** y cargar `http://localhost:8000/` casi al
+  mismo tiempo en todas.
+- **O, más práctico durante la charla, un comando en PowerShell** que lanza varias
+  solicitudes en segundo plano sin abrir ninguna ventana:
+
+  ```powershell
+  1..5 | ForEach-Object { Start-Job -ScriptBlock { Invoke-WebRequest http://localhost:8000/ -UseBasicParsing | Out-Null } } | Out-Null
+  ```
+
+  (Opcional, para limpiar los jobs después: `Get-Job | Remove-Job -Force`)
+
+Mientras se están procesando, ejecuta en Prometheus:
 
 ```
 app_requests_in_progress
 ```
 
-> "Miren, el valor subió a 3 o 4 mientras esas solicitudes se procesaban al mismo
+> "Miren, el valor subió mientras esas solicitudes se procesaban al mismo
 > tiempo. En unos segundos, cuando todas terminen, va a volver a 0. Esto es un Gauge:
 > a diferencia del contador de antes, este valor sube **y baja**, y refleja el estado
 > actual de la aplicación, no un total acumulado."
